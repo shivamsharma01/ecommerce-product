@@ -14,7 +14,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 )
 class ProductApplicationTests {
 	@MockBean
-	private FirestoreTemplate firestore;
+	private FirestoreTemplate firestoreTemplate;
 
 	@MockBean
 	private PubSubTemplate pubSubTemplate;
@@ -22,5 +22,4 @@ class ProductApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
 }

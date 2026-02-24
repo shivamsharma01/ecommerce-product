@@ -4,11 +4,11 @@ import com.google.cloud.firestore.annotation.DocumentId;
 import com.google.cloud.spring.data.firestore.Document;
 import lombok.*;
 
-import java.time.Instant;
+import java.util.Date;
 
 /**
  * Firestore outbox document for reliable event publishing.
- * Written in same transaction as product write; publisher job publishes to Pub/Sub.
+ * Publisher job publishes to Pub/Sub.
  */
 @Document(collectionName = "outbox_events")
 @Getter
@@ -27,6 +27,6 @@ public class OutboxEventDocument {
     private String payload;         // JSON
     private String status;         // PENDING, SENT
     private Integer retryCount;
-    private Instant createdAt;
-    private Instant lastAttemptAt;
+    private Date createdAt;
+    private Date lastAttemptAt;
 }

@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Comparator;
+
 @Repository
 @RequiredArgsConstructor
 public class OutboxFirestoreRepository {
@@ -20,7 +22,8 @@ public class OutboxFirestoreRepository {
     public Flux<OutboxEventDocument> findPendingEvents(int limit) {
         return firestoreTemplate.findAll(OutboxEventDocument.class)
                 .filter(e -> "PENDING".equals(e.getStatus()))
-                .sort((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))
+                .sort(Comparator.comparing(OutboxEventDocument::getCreatedAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
                 .take(limit);
     }
 }

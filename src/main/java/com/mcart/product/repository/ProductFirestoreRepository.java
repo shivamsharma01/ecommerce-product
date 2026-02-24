@@ -11,8 +11,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ProductFirestoreRepository {
 
-    private static final String PRODUCTS_COLLECTION = "products";
-
     private final FirestoreTemplate firestoreTemplate;
 
     public Mono<ProductDocument> save(ProductDocument product) {

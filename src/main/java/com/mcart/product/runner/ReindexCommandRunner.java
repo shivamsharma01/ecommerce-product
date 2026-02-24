@@ -12,15 +12,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
 /**
  * Batch reindex job: run with --reindex to read all products from Firestore
- * and publish events to Pub/Sub for indexing. Indexer consumes and writes to ES
- * with version check (skips overwriting newer docs).
+ * and publish events to Pub/Sub for indexing.
  *
- * Usage: java -jar app.jar --reindex
+ * Usage: java -jar app.jar --app.reindex=true --spring.main.web-application-type=none
  */
 @Component
 @RequiredArgsConstructor
@@ -37,20 +37,21 @@ public class ReindexCommandRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
         log.info("Starting product reindex job");
-        Long count = productRepository.findAll()
-                .doOnNext(this::publishProductEvent)
+        productRepository.findAll()
+                .flatMap(this::publishProductEvent)
                 .count()
+                .doOnSuccess(count -> log.info("Reindex complete: published {} product events", count))
                 .block();
-        log.info("Reindex complete: published {} product events", count);
     }
 
-    private void publishProductEvent(ProductDocument product) {
+    private Mono<Void> publishProductEvent(ProductDocument product) {
         try {
+            var updatedAt = product.getUpdatedAt() != null ? product.getUpdatedAt().toInstant() : null;
             ProductEventPayload payload = ProductEventPayload.builder()
                     .productId(product.getProductId())
                     .eventType(OutboxEventService.EVENT_PRODUCT_UPDATED)
                     .version(product.getVersion())
-                    .updatedAt(product.getUpdatedAt())
+                    .updatedAt(updatedAt)
                     .name(product.getName())
                     .description(product.getDescription())
                     .price(product.getPrice())
@@ -68,8 +69,10 @@ public class ReindexCommandRunner implements CommandLineRunner {
             ));
             pubSubTemplate.publish(PRODUCT_EVENTS_TOPIC, message);
             log.debug("Published reindex event for product {}", product.getProductId());
+            return Mono.empty();
         } catch (JsonProcessingException e) {
             log.error("Failed to publish reindex event for product {}", product.getProductId(), e);
+            return Mono.empty();
         }
     }
 }

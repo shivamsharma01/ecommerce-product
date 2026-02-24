@@ -31,24 +31,39 @@ public class OutboxEventService {
     private final OutboxFirestoreRepository outboxRepository;
     private final ObjectMapper objectMapper;
 
-    public void publishProductCreated(ProductDocument product) throws JsonProcessingException {
-        String payloadJson = objectMapper.writeValueAsString(toPayload(product, EVENT_PRODUCT_CREATED));
-        saveOutboxEvent(product.getProductId(), EVENT_PRODUCT_CREATED, payloadJson);
+    public Mono<Void> publishProductCreated(ProductDocument product) {
+        try {
+            String payloadJson = objectMapper.writeValueAsString(toPayload(product, EVENT_PRODUCT_CREATED));
+            return saveOutboxEvent(product.getProductId(), EVENT_PRODUCT_CREATED, payloadJson);
+        } catch (JsonProcessingException ex) {
+            log.warn("Failed to serialize outbox payload for product {}", product.getProductId(), ex);
+            return Mono.empty();
+        }
     }
 
-    public void publishProductUpdated(ProductDocument product) throws JsonProcessingException {
-        String payloadJson = objectMapper.writeValueAsString(toPayload(product, EVENT_PRODUCT_UPDATED));
-        saveOutboxEvent(product.getProductId(), EVENT_PRODUCT_UPDATED, payloadJson);
+    public Mono<Void> publishProductUpdated(ProductDocument product) {
+        try {
+            String payloadJson = objectMapper.writeValueAsString(toPayload(product, EVENT_PRODUCT_UPDATED));
+            return saveOutboxEvent(product.getProductId(), EVENT_PRODUCT_UPDATED, payloadJson);
+        } catch (JsonProcessingException ex) {
+            log.warn("Failed to serialize outbox payload for product {}", product.getProductId(), ex);
+            return Mono.empty();
+        }
     }
 
-    public void publishProductDeleted(String productId, long version, Instant updatedAt) throws JsonProcessingException {
-        ProductEventPayload payload = ProductEventPayload.builder()
-                .productId(productId)
-                .eventType(EVENT_PRODUCT_DELETED)
-                .version(version)
-                .updatedAt(updatedAt)
-                .build();
-        saveOutboxEvent(productId, EVENT_PRODUCT_DELETED, objectMapper.writeValueAsString(payload));
+    public Mono<Void> publishProductDeleted(String productId, long version, Instant updatedAt) {
+        try {
+            ProductEventPayload payload = ProductEventPayload.builder()
+                    .productId(productId)
+                    .eventType(EVENT_PRODUCT_DELETED)
+                    .version(version)
+                    .updatedAt(updatedAt)
+                    .build();
+            return saveOutboxEvent(productId, EVENT_PRODUCT_DELETED, objectMapper.writeValueAsString(payload));
+        } catch (JsonProcessingException ex) {
+            log.warn("Failed to serialize outbox payload for product delete {}", productId, ex);
+            return Mono.empty();
+        }
     }
 
     private ProductEventPayload toPayload(ProductDocument product, String eventType) {
@@ -56,7 +71,7 @@ public class OutboxEventService {
                 .productId(product.getProductId())
                 .eventType(eventType)
                 .version(product.getVersion())
-                .updatedAt(product.getUpdatedAt())
+                .updatedAt(product.getUpdatedAt() != null ? product.getUpdatedAt().toInstant() : null)
                 .name(product.getName())
                 .description(product.getDescription())
                 .price(product.getPrice())
@@ -66,8 +81,8 @@ public class OutboxEventService {
                 .build();
     }
 
-    private void saveOutboxEvent(String aggregateId, String eventType, String payloadJson) {
-        Instant now = Instant.now();
+    private Mono<Void> saveOutboxEvent(String aggregateId, String eventType, String payloadJson) {
+        java.util.Date now = new java.util.Date();
         OutboxEventDocument event = OutboxEventDocument.builder()
                 .eventId(UUID.randomUUID().toString())
                 .aggregateType(AGGREGATE_PRODUCT)
@@ -79,6 +94,6 @@ public class OutboxEventService {
                 .createdAt(now)
                 .lastAttemptAt(now)
                 .build();
-        outboxRepository.save(event).block();
+        return outboxRepository.save(event).then();
     }
 }

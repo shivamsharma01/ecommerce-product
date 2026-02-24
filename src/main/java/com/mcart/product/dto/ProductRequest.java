@@ -3,8 +3,6 @@ package com.mcart.product.dto;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
-import java.math.BigDecimal;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,7 +19,7 @@ public class ProductRequest {
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
     @Digits(integer = 8, fraction = 2)
-    private BigDecimal price;
+    private Double price;
 
     @NotBlank(message = "SKU is required")
     @Size(max = 100)

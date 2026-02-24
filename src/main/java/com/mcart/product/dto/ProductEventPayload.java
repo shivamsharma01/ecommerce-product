@@ -3,7 +3,6 @@ package com.mcart.product.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -25,7 +24,7 @@ public class ProductEventPayload {
     // Product data (null for DELETE)
     private String name;
     private String description;
-    private BigDecimal price;
+    private Double price;
     private String sku;
     private Integer stockQuantity;
     private String category;
