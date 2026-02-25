@@ -35,7 +35,6 @@
 | `OutboxEventService` | Persists outbox events on create/update/delete |
 | `OutboxPublisherJob` | Scheduled job (5s) publishes pending outbox events to Pub/Sub |
 | `ProductEventPayload` | Event payload DTO (productId, version, updatedAt, product fields) |
-| `ReindexCommandRunner` | Batch reindex: reads all from Firestore, publishes to Pub/Sub |
 
 ### API Changes
 - Product ID is now a **string** (e.g. `P1`, `PABC123...`) instead of `Long`
@@ -44,11 +43,6 @@
 ### Configuration
 - Removed PostgreSQL/JPA config
 - Added Firestore and Pub/Sub (GCP project-id, emulator options)
-
-### Reindex Job
-```bash
-java -jar product-service.jar --app.reindex=true --spring.main.web-application-type=none
-```
 
 ---
 
@@ -67,6 +61,8 @@ java -jar product-service.jar --app.reindex=true --spring.main.web-application-t
 | `ProductEventMapper` | Maps `ProductEventPayload` → ES `Product` |
 | `ProductIndexerService.processMessage(String)` | Dispatches by format; version check before index |
 | `Product` model | Added `version`, `updatedAt` fields |
+| `ReindexService` | Full reindex: deletes index, recreates, indexes all from Firestore |
+| `ReindexController` | POST /admin/reindex triggers reindex |
 
 ### Event Format (Outbox)
 ```json
@@ -94,6 +90,12 @@ java -jar product-service.jar --app.reindex=true --spring.main.web-application-t
 ### Pub/Sub Setup
 - **Topic:** `product-events`
 - **Subscription:** `product-events-sub` (used by indexer)
+
+### Reindex
+```bash
+curl -X POST http://localhost:8085/admin/reindex
+```
+Deletes the products index first, then indexes all from Firestore (no orphaned documents).
 
 ---
 
