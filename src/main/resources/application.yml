@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: product
+  cloud:
+    gcp:
+      project-id: my-project-chat-ai-487408
+      credentials:
+        location: file:/home/shivam-sharma/.gcp/my-project-chat-ai-487408-5604b2cd4107.json
+      firestore:
+        enabled: true
+
+server:
+  port: ${SERVER_PORT:8084}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+app:
+  security:
+    enabled: false
+    # cors-allowed-origins:
+    #   - https://your-frontend.example
+    # required-scope: products.write
+# When app.security.enabled=true, add under spring.security.oauth2.resourceserver.jwt:
+#   issuer-uri: ${JWT_ISSUER_URI}   # or jwk-set-uri

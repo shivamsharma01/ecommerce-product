@@ -1,0 +1,62 @@
+# Cloud Build: build & push to Artifact Registry, roll Deployment to new image.
+#
+# Substitutions (set in trigger or `gcloud builds submit --substitutions=...`):
+#   _REGION       — Artifact Registry location, e.g. us-central1
+#   _REPO         — Artifact Registry repository id
+#   _SERVICE_NAME — Kubernetes Deployment & container name (e.g. product)
+#   _GKE_CLUSTER  — GKE cluster name (get-credentials)
+#   _GKE_LOCATION — GKE zone or region, e.g. us-central1-a or us-central1
+#
+# Built-in: $PROJECT_ID, $COMMIT_SHA (GitHub/Cloud Source triggers) or $SHORT_SHA
+#
+# IAM: Cloud Build SA needs Artifact Registry writer + (if using GKE) container.developer
+
+substitutions:
+  _REGION: us-central1
+  _REPO: mcart
+  _SERVICE_NAME: product
+  _GKE_CLUSTER: ''
+  _GKE_LOCATION: us-central1
+  _K8S_NAMESPACE: default
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE_NAME}:${COMMIT_SHA}
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE_NAME}:latest
+      - .
+
+  - id: rollout
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        if [[ -z "${_GKE_CLUSTER}" ]]; then
+          echo "Skipping rollout: _GKE_CLUSTER not set"
+          exit 0
+        fi
+        gcloud container clusters get-credentials "${_GKE_CLUSTER}" \
+          --location="${_GKE_LOCATION}" \
+          --project="${PROJECT_ID}"
+        kubectl set image "deployment/${_SERVICE_NAME}" \
+          "${_SERVICE_NAME}=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE_NAME}:${COMMIT_SHA}" \
+          --namespace="${_K8S_NAMESPACE}" \
+          --record
+        kubectl rollout status "deployment/${_SERVICE_NAME}" \
+          --namespace="${_K8S_NAMESPACE}" \
+          --timeout=5m
+
+images:
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE_NAME}:${COMMIT_SHA}
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE_NAME}:latest

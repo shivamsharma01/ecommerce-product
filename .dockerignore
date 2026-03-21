@@ -1,0 +1,22 @@
+# Git / IDE
+.git
+.gitignore
+.cursor
+.idea
+*.iml
+.vscode
+
+# Build outputs (rebuilt in image)
+build
+out
+bin
+.gradle
+
+# Docs / CI (not needed in image)
+*.md
+k8s
+cloudbuild.yaml
+
+# Local env
+.env
+.env.*
