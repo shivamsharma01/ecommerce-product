@@ -3,6 +3,7 @@ package com.mcart.product.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcart.product.dto.ProductEventPayload;
+import com.mcart.product.exception.OutboxPersistenceException;
 import com.mcart.product.model.OutboxEventDocument;
 import com.mcart.product.model.ProductDocument;
 import com.mcart.product.repository.OutboxFirestoreRepository;
@@ -36,8 +37,8 @@ public class OutboxEventService {
             String payloadJson = objectMapper.writeValueAsString(toPayload(product, EVENT_PRODUCT_CREATED));
             return saveOutboxEvent(product.getProductId(), EVENT_PRODUCT_CREATED, payloadJson);
         } catch (JsonProcessingException ex) {
-            log.warn("Failed to serialize outbox payload for product {}", product.getProductId(), ex);
-            return Mono.empty();
+            log.error("Failed to serialize outbox payload for product {}", product.getProductId(), ex);
+            return Mono.error(new OutboxPersistenceException("Failed to serialize product event", ex));
         }
     }
 
@@ -46,8 +47,8 @@ public class OutboxEventService {
             String payloadJson = objectMapper.writeValueAsString(toPayload(product, EVENT_PRODUCT_UPDATED));
             return saveOutboxEvent(product.getProductId(), EVENT_PRODUCT_UPDATED, payloadJson);
         } catch (JsonProcessingException ex) {
-            log.warn("Failed to serialize outbox payload for product {}", product.getProductId(), ex);
-            return Mono.empty();
+            log.error("Failed to serialize outbox payload for product {}", product.getProductId(), ex);
+            return Mono.error(new OutboxPersistenceException("Failed to serialize product event", ex));
         }
     }
 
@@ -61,8 +62,8 @@ public class OutboxEventService {
                     .build();
             return saveOutboxEvent(productId, EVENT_PRODUCT_DELETED, objectMapper.writeValueAsString(payload));
         } catch (JsonProcessingException ex) {
-            log.warn("Failed to serialize outbox payload for product delete {}", productId, ex);
-            return Mono.empty();
+            log.error("Failed to serialize outbox payload for product delete {}", productId, ex);
+            return Mono.error(new OutboxPersistenceException("Failed to serialize product delete event", ex));
         }
     }
 
@@ -94,6 +95,10 @@ public class OutboxEventService {
                 .createdAt(now)
                 .lastAttemptAt(now)
                 .build();
-        return outboxRepository.save(event).then();
+        return outboxRepository.save(event)
+                .then()
+                .onErrorMap(ex -> ex instanceof OutboxPersistenceException ope
+                        ? ope
+                        : new OutboxPersistenceException("Failed to persist outbox event", ex));
     }
 }

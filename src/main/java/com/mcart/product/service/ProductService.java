@@ -2,12 +2,14 @@ package com.mcart.product.service;
 
 import com.mcart.product.dto.ProductRequest;
 import com.mcart.product.dto.ProductResponse;
+import com.mcart.product.exception.DuplicateSkuException;
+import com.mcart.product.exception.ProductNotFoundException;
 import com.mcart.product.mapper.ProductMapper;
 import com.mcart.product.model.ProductDocument;
 import com.mcart.product.repository.ProductFirestoreRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -16,17 +18,17 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class ProductService {
 
     private final ProductFirestoreRepository productRepository;
     private final OutboxEventService outboxEventService;
     private final ProductMapper productMapper;
 
+    @Transactional(transactionManager = "firestoreTransactionManager")
     public Mono<ProductResponse> createProduct(ProductRequest request) {
         return productRepository.existsBySku(request.getSku())
                 .flatMap(exists -> exists
-                        ? Mono.error(new IllegalArgumentException("Product with SKU " + request.getSku() + " already exists"))
+                        ? Mono.error(new DuplicateSkuException(request.getSku()))
                         : doCreateProduct(request));
     }
 
@@ -48,18 +50,13 @@ public class ProductService {
                 .build();
 
         return productRepository.save(product)
-                .flatMap(p -> outboxEventService.publishProductCreated(p)
-                        .onErrorResume(ex -> {
-                            log.warn("Failed to persist outbox event for product {} - will be retried by publisher", productId, ex);
-                            return Mono.empty();
-                        })
-                        .thenReturn(p))
+                .flatMap(p -> outboxEventService.publishProductCreated(p).thenReturn(p))
                 .map(productMapper::toResponse);
     }
 
     public Mono<ProductResponse> getProductById(String id) {
         return productRepository.findById(id)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Product not found with id: " + id)))
+                .switchIfEmpty(Mono.error(new ProductNotFoundException(id)))
                 .map(productMapper::toResponse);
     }
 
@@ -68,9 +65,14 @@ public class ProductService {
                 .map(productMapper::toResponse);
     }
 
+    @Transactional(transactionManager = "firestoreTransactionManager")
     public Mono<ProductResponse> updateProduct(String id, ProductRequest request) {
         return productRepository.findById(id)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Product not found with id: " + id)))
+                .switchIfEmpty(Mono.error(new ProductNotFoundException(id)))
+                .flatMap(product -> productRepository.skuTakenByOtherProduct(request.getSku(), id)
+                        .flatMap(taken -> taken
+                                ? Mono.error(new DuplicateSkuException(request.getSku()))
+                                : Mono.just(product)))
                 .flatMap(product -> {
                     product.setName(request.getName());
                     product.setDescription(request.getDescription());
@@ -82,24 +84,16 @@ public class ProductService {
                     product.setUpdatedAt(new Date());
                     return productRepository.save(product);
                 })
-                .flatMap(p -> outboxEventService.publishProductUpdated(p)
-                        .onErrorResume(ex -> {
-                            log.warn("Failed to persist outbox event for product {} - will be retried by publisher", id, ex);
-                            return Mono.empty();
-                        })
-                        .thenReturn(p))
+                .flatMap(p -> outboxEventService.publishProductUpdated(p).thenReturn(p))
                 .map(productMapper::toResponse);
     }
 
+    @Transactional(transactionManager = "firestoreTransactionManager")
     public Mono<Void> deleteProduct(String id) {
         return productRepository.findById(id)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Product not found with id: " + id)))
+                .switchIfEmpty(Mono.error(new ProductNotFoundException(id)))
                 .flatMap(product -> outboxEventService.publishProductDeleted(id, product.getVersion(),
                                 product.getUpdatedAt() != null ? product.getUpdatedAt().toInstant() : null)
-                        .onErrorResume(ex -> {
-                            log.warn("Failed to persist outbox event for product delete {} - will be retried by publisher", id, ex);
-                            return Mono.empty();
-                        })
                         .then(productRepository.deleteById(id)));
     }
 }

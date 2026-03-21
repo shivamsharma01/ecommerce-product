@@ -1,7 +1,10 @@
 package com.mcart.product.repository;
 
+import com.mcart.product.firestore.FirestoreStructuredQueries;
 import com.mcart.product.model.ProductDocument;
 import com.google.cloud.spring.data.firestore.FirestoreTemplate;
+import com.google.firestore.v1.StructuredQuery;
+import com.google.protobuf.Int32Value;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
@@ -29,9 +32,26 @@ public class ProductFirestoreRepository {
         return firestoreTemplate.deleteById(Mono.just(productId), ProductDocument.class);
     }
 
+    /**
+     * Indexed query on {@code sku} (single-field equality).
+     */
+    public Mono<ProductDocument> findFirstBySku(String sku) {
+        StructuredQuery.Builder query = StructuredQuery.newBuilder()
+                .setWhere(FirestoreStructuredQueries.stringFieldEquals("sku", sku))
+                .setLimit(Int32Value.of(1));
+        return firestoreTemplate.execute(query, ProductDocument.class).next();
+    }
+
     public Mono<Boolean> existsBySku(String sku) {
-        return firestoreTemplate.findAll(ProductDocument.class)
-                .filter(p -> sku.equals(p.getSku()))
-                .hasElements();
+        return findFirstBySku(sku).hasElement();
+    }
+
+    /**
+     * {@code true} if another product (not {@code excludeProductId}) already uses this SKU.
+     */
+    public Mono<Boolean> skuTakenByOtherProduct(String sku, String excludeProductId) {
+        return findFirstBySku(sku)
+                .map(p -> !excludeProductId.equals(p.getProductId()))
+                .defaultIfEmpty(false);
     }
 }

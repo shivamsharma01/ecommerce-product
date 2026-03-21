@@ -9,7 +9,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 @SpringBootTest(
 		properties = {
 				"spring.cloud.gcp.firestore.enabled=false",
-				"spring.cloud.gcp.pubsub.enabled=false"
+				"spring.cloud.gcp.pubsub.enabled=false",
+				"app.security.enabled=false"
 		}
 )
 class ProductApplicationTests {

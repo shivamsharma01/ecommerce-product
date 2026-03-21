@@ -13,14 +13,38 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleProductNotFound(ProductNotFoundException ex) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.builder()
                         .timestamp(Instant.now())
                         .status(HttpStatus.NOT_FOUND.value())
                         .error("Not Found")
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(DuplicateSkuException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateSku(DuplicateSkuException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.builder()
+                        .timestamp(Instant.now())
+                        .status(HttpStatus.CONFLICT.value())
+                        .error("Conflict")
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(OutboxPersistenceException.class)
+    public ResponseEntity<ErrorResponse> handleOutboxPersistence(OutboxPersistenceException ex) {
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ErrorResponse.builder()
+                        .timestamp(Instant.now())
+                        .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                        .error("Service Unavailable")
                         .message(ex.getMessage())
                         .build());
     }
