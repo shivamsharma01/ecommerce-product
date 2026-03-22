@@ -24,8 +24,8 @@ public class SecurityProperties {
     private List<String> corsAllowedOrigins = new ArrayList<>();
 
     /**
-     * If set, POST/PUT/PATCH/DELETE under {@code /api/**} require this OAuth2 scope (e.g. {@code products.write} → {@code SCOPE_products.write}).
-     * GET/HEAD remain authenticated only.
+     * If set, every method on {@code /api/**} (including GET/HEAD) requires this OAuth2 scope
+     * (e.g. {@code product.admin} → authority {@code SCOPE_product.admin}).
      */
     private String requiredScope;
 }

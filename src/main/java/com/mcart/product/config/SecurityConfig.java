@@ -72,8 +72,9 @@ public class SecurityConfig {
         String scope = securityProperties.getRequiredScope();
         if (StringUtils.hasText(scope)) {
             String authority = "SCOPE_" + scope.trim();
-            ex.pathMatchers(HttpMethod.GET, "/api/**").authenticated();
-            ex.pathMatchers(HttpMethod.HEAD, "/api/**").authenticated();
+            // All /api/** methods require the scope (admin-only product API surface).
+            ex.pathMatchers(HttpMethod.GET, "/api/**").hasAuthority(authority);
+            ex.pathMatchers(HttpMethod.HEAD, "/api/**").hasAuthority(authority);
             ex.pathMatchers(HttpMethod.POST, "/api/**").hasAuthority(authority);
             ex.pathMatchers(HttpMethod.PUT, "/api/**").hasAuthority(authority);
             ex.pathMatchers(HttpMethod.DELETE, "/api/**").hasAuthority(authority);

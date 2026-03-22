@@ -3,11 +3,16 @@ spring:
     name: product
   cloud:
     gcp:
-      project-id: my-project-chat-ai-487408
+      project-id: ${SPRING_CLOUD_GCP_PROJECT_ID:}
       credentials:
-        location: file:/home/shivam-sharma/.gcp/my-project-chat-ai-487408-5604b2cd4107.json
+        location: ${SPRING_CLOUD_GCP_CREDENTIALS_LOCATION:}
       firestore:
-        enabled: true
+        enabled: ${SPRING_CLOUD_GCP_FIRESTORE_ENABLED:false}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8081}
 
 server:
   port: ${SERVER_PORT:8084}
@@ -32,9 +37,5 @@ management:
 
 app:
   security:
-    enabled: false
-    # cors-allowed-origins:
-    #   - https://your-frontend.example
-    # required-scope: products.write
-# When app.security.enabled=true, add under spring.security.oauth2.resourceserver.jwt:
-#   issuer-uri: ${JWT_ISSUER_URI}   # or jwk-set-uri
+    enabled: ${APP_SECURITY_ENABLED:false}
+    required-scope: ${APP_SECURITY_REQUIRED_SCOPE:}
