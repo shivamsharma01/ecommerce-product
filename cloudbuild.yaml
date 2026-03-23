@@ -1,62 +1,77 @@
-# Cloud Build: build & push to Artifact Registry, roll Deployment to new image.
-#
-# Substitutions (set in trigger or `gcloud builds submit --substitutions=...`):
-#   _REGION       — Artifact Registry location, e.g. us-central1
-#   _REPO         — Artifact Registry repository id
-#   _SERVICE_NAME — Kubernetes Deployment & container name (e.g. product)
-#   _GKE_CLUSTER  — GKE cluster name (get-credentials)
-#   _GKE_LOCATION — GKE zone or region, e.g. us-central1-a or us-central1
-#
-# Built-in: $PROJECT_ID, $COMMIT_SHA (GitHub/Cloud Source triggers) or $SHORT_SHA
-#
-# IAM: Cloud Build SA needs Artifact Registry writer + (if using GKE) container.developer
-
 substitutions:
-  _REGION: us-central1
-  _REPO: mcart
+  _REGION: asia-south2
+  _REPO: docker-apps
   _SERVICE_NAME: product
-  _GKE_CLUSTER: ''
-  _GKE_LOCATION: us-central1
-  _K8S_NAMESPACE: default
+  _CONFIG_REPO_URL: github.com/shivamsharma01/ecommerce-infra.git
+  _CONFIG_REPO_BRANCH: main
+  _CONFIG_FILE: deploy/k8s/apps/product/deployment.yaml
+  _GITHUB_TOKEN_SECRET: github-token
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: E2_HIGHCPU_8
 
 steps:
-  - id: build
+  - id: docker-build
     name: gcr.io/cloud-builders/docker
+    env:
+      - DOCKER_BUILDKIT=1
     args:
       - build
-      - -f
-      - Dockerfile
-      - -t
-      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE_NAME}:${COMMIT_SHA}
-      - -t
-      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE_NAME}:latest
+      - '--progress=plain'
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE_NAME:$COMMIT_SHA'
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE_NAME:latest'
       - .
 
-  - id: rollout
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+  - id: docker-push-sha
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE_NAME:$COMMIT_SHA'
+
+  - id: docker-push-latest
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE_NAME:latest'
+
+  - id: update-config-repo
+    name: gcr.io/cloud-builders/git
     entrypoint: bash
+    secretEnv:
+      - GITHUB_TOKEN
     args:
       - -ceu
       - |
-        if [[ -z "${_GKE_CLUSTER}" ]]; then
-          echo "Skipping rollout: _GKE_CLUSTER not set"
+        : "$${GITHUB_TOKEN:?Set GitHub token via Secret Manager}"
+
+        RAW_SHA="$${COMMIT_SHA:-$${SHORT_SHA:-$${REVISION_ID:-$${BUILD_ID:-manual}}}}"
+        VERSION="$$(printf '%s' "$${RAW_SHA}" | cut -c1-7)"
+        IMAGE_URI="$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE_NAME:$${VERSION}"
+
+        git clone "https://oauth2:$${GITHUB_TOKEN}@${_CONFIG_REPO_URL}" config-repo
+        cd config-repo
+        git checkout "$_CONFIG_REPO_BRANCH"
+
+        test -f "$_CONFIG_FILE"
+
+        sed -i -E \
+          "s|^([[:space:]]*image:[[:space:]]*).*$|\\1$${IMAGE_URI}|g" \
+          "$_CONFIG_FILE"
+
+        if git diff --quiet -- "$_CONFIG_FILE"; then
+          echo "No config changes detected in $_CONFIG_FILE; skipping commit."
           exit 0
         fi
-        gcloud container clusters get-credentials "${_GKE_CLUSTER}" \
-          --location="${_GKE_LOCATION}" \
-          --project="${PROJECT_ID}"
-        kubectl set image "deployment/${_SERVICE_NAME}" \
-          "${_SERVICE_NAME}=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE_NAME}:${COMMIT_SHA}" \
-          --namespace="${_K8S_NAMESPACE}" \
-          --record
-        kubectl rollout status "deployment/${_SERVICE_NAME}" \
-          --namespace="${_K8S_NAMESPACE}" \
-          --timeout=5m
 
-images:
-  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE_NAME}:${COMMIT_SHA}
-  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE_NAME}:latest
+        git config user.name "cloud-build-bot"
+        git config user.email "cloud-build-bot@${PROJECT_ID}.iam.gserviceaccount.com"
+        git add "$_CONFIG_FILE"
+        git commit -m "chore(product): update image to $${VERSION}"
+        git push origin "HEAD:${_CONFIG_REPO_BRANCH}"
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/${_GITHUB_TOKEN_SECRET}/versions/latest
+      env: GITHUB_TOKEN
