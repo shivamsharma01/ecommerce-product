@@ -17,7 +17,7 @@ Default port in `application.yml` is **8084**; in Kubernetes use **`SERVER_PORT=
 
 | Variable | Purpose |
 |----------|---------|
-| `SPRING_CLOUD_GCP_PROJECT_ID` | GCP project |
+| `GCP_PROJECT_ID` | GCP project |
 | `SPRING_CLOUD_GCP_FIRESTORE_ENABLED` | `true` / `false` |
 | `SPRING_CLOUD_GCP_PUBSUB_ENABLED` | `true` / `false` |
 | `APP_SECURITY_ENABLED` | `true` to require JWT on `/api/**` |
