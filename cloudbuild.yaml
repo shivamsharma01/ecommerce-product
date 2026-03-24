@@ -60,7 +60,7 @@ steps:
 
         IMAGE_URI="$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE_NAME:$${RAW_SHA}"
 
-        git clone "https://oauth2:$${GITHUB_TOKEN}@$_CONFIG_REPO_URL" config-repo
+        git clone "https://x-access-token:$${GITHUB_TOKEN}@$_CONFIG_REPO_URL" config-repo
         cd config-repo
 
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
