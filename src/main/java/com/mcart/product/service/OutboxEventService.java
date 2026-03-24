@@ -78,7 +78,12 @@ public class OutboxEventService {
                 .price(product.getPrice())
                 .sku(product.getSku())
                 .stockQuantity(product.getStockQuantity())
-                .category(product.getCategory())
+                .categories(product.getCategories())
+                .brand(product.getBrand())
+                .imageUrls(product.getImageUrls())
+                .rating(product.getRating())
+                .inStock(product.getInStock())
+                .attributes(product.getAttributes())
                 .build();
     }
 

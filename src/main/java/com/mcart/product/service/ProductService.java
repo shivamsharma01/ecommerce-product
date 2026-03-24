@@ -43,7 +43,12 @@ public class ProductService {
                 .price(request.getPrice())
                 .sku(request.getSku())
                 .stockQuantity(request.getStockQuantity())
-                .category(request.getCategory())
+                .categories(request.getCategories())
+                .brand(request.getBrand())
+                .imageUrls(request.getImageUrls())
+                .rating(request.getRating())
+                .inStock(resolveInStock(request))
+                .attributes(request.getAttributes())
                 .version(1L)
                 .createdAt(now)
                 .updatedAt(now)
@@ -79,7 +84,12 @@ public class ProductService {
                     product.setPrice(request.getPrice());
                     product.setSku(request.getSku());
                     product.setStockQuantity(request.getStockQuantity());
-                    product.setCategory(request.getCategory());
+                    product.setCategories(request.getCategories());
+                    product.setBrand(request.getBrand());
+                    product.setImageUrls(request.getImageUrls());
+                    product.setRating(request.getRating());
+                    product.setInStock(resolveInStock(request));
+                    product.setAttributes(request.getAttributes());
                     product.setVersion(product.getVersion() + 1);
                     product.setUpdatedAt(new Date());
                     return productRepository.save(product);
@@ -95,5 +105,12 @@ public class ProductService {
                 .flatMap(product -> outboxEventService.publishProductDeleted(id, product.getVersion(),
                                 product.getUpdatedAt() != null ? product.getUpdatedAt().toInstant() : null)
                         .then(productRepository.deleteById(id)));
+    }
+
+    private Boolean resolveInStock(ProductRequest request) {
+        if (request.getInStock() != null) {
+            return request.getInStock();
+        }
+        return request.getStockQuantity() != null && request.getStockQuantity() > 0;
     }
 }

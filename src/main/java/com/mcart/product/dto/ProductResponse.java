@@ -3,6 +3,8 @@ package com.mcart.product.dto;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -16,7 +18,12 @@ public class ProductResponse {
     private Double price;
     private String sku;
     private Integer stockQuantity;
-    private String category;
+    private List<String> categories;
+    private String brand;
+    private List<String> imageUrls;
+    private Double rating;
+    private Boolean inStock;
+    private Map<String, Object> attributes;
     private Instant createdAt;
     private Instant updatedAt;
 }

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Payload for product events published to Pub/Sub.
@@ -27,5 +29,10 @@ public class ProductEventPayload {
     private Double price;
     private String sku;
     private Integer stockQuantity;
-    private String category;
+    private List<String> categories;
+    private String brand;
+    private List<String> imageUrls;
+    private Double rating;
+    private Boolean inStock;
+    private Map<String, Object> attributes;
 }
