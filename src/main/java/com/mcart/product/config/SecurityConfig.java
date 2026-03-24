@@ -69,12 +69,12 @@ public class SecurityConfig {
         // OpenAPI / Swagger UI (springdoc)
         ex.pathMatchers("/v3/api-docs", "/v3/api-docs/**").permitAll();
         ex.pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/webjars/swagger-ui/**").permitAll();
+        ex.pathMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll();
+        ex.pathMatchers(HttpMethod.HEAD, "/api/products", "/api/products/**").permitAll();
         String scope = securityProperties.getRequiredScope();
         if (StringUtils.hasText(scope)) {
             String authority = "SCOPE_" + scope.trim();
-            // All /api/** methods require the scope (admin-only product API surface).
-            ex.pathMatchers(HttpMethod.GET, "/api/**").hasAuthority(authority);
-            ex.pathMatchers(HttpMethod.HEAD, "/api/**").hasAuthority(authority);
+            // Mutating product APIs remain admin-only.
             ex.pathMatchers(HttpMethod.POST, "/api/**").hasAuthority(authority);
             ex.pathMatchers(HttpMethod.PUT, "/api/**").hasAuthority(authority);
             ex.pathMatchers(HttpMethod.DELETE, "/api/**").hasAuthority(authority);

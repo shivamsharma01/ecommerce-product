@@ -2,6 +2,7 @@ package com.mcart.product.service;
 
 import com.mcart.product.dto.ProductRequest;
 import com.mcart.product.dto.ProductResponse;
+import com.mcart.product.dto.PagedProductResponse;
 import com.mcart.product.exception.DuplicateSkuException;
 import com.mcart.product.exception.ProductNotFoundException;
 import com.mcart.product.mapper.ProductMapper;
@@ -10,10 +11,11 @@ import com.mcart.product.repository.ProductFirestoreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Date;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -65,9 +67,16 @@ public class ProductService {
                 .map(productMapper::toResponse);
     }
 
-    public Flux<ProductResponse> getAllProducts() {
+    public Mono<PagedProductResponse> getProductsPage(int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        int skip = safePage * safeSize;
+
         return productRepository.findAll()
-                .map(productMapper::toResponse);
+                .sort(Comparator.comparing(ProductDocument::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(productMapper::toResponse)
+                .collectList()
+                .map(items -> toPage(items, safePage, safeSize, skip));
     }
 
     @Transactional(transactionManager = "firestoreTransactionManager")
@@ -112,5 +121,19 @@ public class ProductService {
             return request.getInStock();
         }
         return request.getStockQuantity() != null && request.getStockQuantity() > 0;
+    }
+
+    private PagedProductResponse toPage(List<ProductResponse> items, int page, int size, int skip) {
+        int total = items.size();
+        int from = Math.min(skip, total);
+        int to = Math.min(from + size, total);
+        int totalPages = size <= 0 ? 0 : (int) Math.ceil((double) total / size);
+        return PagedProductResponse.builder()
+                .items(items.subList(from, to))
+                .total(total)
+                .page(page)
+                .size(size)
+                .totalPages(totalPages)
+                .build();
     }
 }
