@@ -1,5 +1,7 @@
 package com.mcart.product.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.util.List;
@@ -40,6 +42,8 @@ public class ProductRequest {
 
     @NotNull(message = "Image URLs are required")
     @Size(min = 1, max = 10)
+    @JsonProperty("imageUrls")
+    @JsonAlias("imagePaths")
     private List<@NotBlank @Size(max = 2000) String> imageUrls;
 
     @DecimalMin(value = "0.0", message = "Rating cannot be negative")
