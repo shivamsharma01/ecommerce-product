@@ -27,5 +27,5 @@ public class SecurityProperties {
      * If set, every method on {@code /api/**} (including GET/HEAD) requires this OAuth2 scope
      * (e.g. {@code product.admin} → authority {@code SCOPE_product.admin}).
      */
-    private String requiredScope;
+    private String requiredScope = "product.admin";
 }

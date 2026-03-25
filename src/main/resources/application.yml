@@ -38,4 +38,4 @@ management:
 app:
   security:
     enabled: ${APP_SECURITY_ENABLED:false}
-    required-scope: ${APP_SECURITY_REQUIRED_SCOPE:}
+    required-scope: ${APP_SECURITY_REQUIRED_SCOPE:product.admin}

@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: product
+  cloud:
+    gcp:
+      project-id: ${SPRING_CLOUD_GCP_PROJECT_ID:my-project-chat-ai-487408}
+      firestore:
+        enabled: ${SPRING_CLOUD_GCP_FIRESTORE_ENABLED:true}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8081}
+
+app:
+  security:
+    enabled: ${APP_SECURITY_ENABLED:true}

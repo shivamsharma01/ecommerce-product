@@ -69,8 +69,9 @@ public class SecurityConfig {
         // OpenAPI / Swagger UI (springdoc)
         ex.pathMatchers("/v3/api-docs", "/v3/api-docs/**").permitAll();
         ex.pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/webjars/swagger-ui/**").permitAll();
-        ex.pathMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll();
-        ex.pathMatchers(HttpMethod.HEAD, "/api/products", "/api/products/**").permitAll();
+        // Read-only APIs are public (no JWT required).
+        ex.pathMatchers(HttpMethod.GET, "/api/**").permitAll();
+        ex.pathMatchers(HttpMethod.HEAD, "/api/**").permitAll();
         String scope = securityProperties.getRequiredScope();
         if (StringUtils.hasText(scope)) {
             String authority = "SCOPE_" + scope.trim();
