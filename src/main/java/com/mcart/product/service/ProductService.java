@@ -42,7 +42,7 @@ public class ProductService {
         Date now = new Date();
 
         ProductDocument product = ProductDocument.builder()
-                .productId(productId)
+                .id(productId)
                 .name(request.getName())
                 .description(request.getDescription())
                 .price(request.getPrice())

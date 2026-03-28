@@ -18,8 +18,9 @@ import java.util.Map;
 @Builder
 public class ProductDocument {
 
+    /** Firestore document id (path); must not duplicate a stored field named the same as this property. */
     @DocumentId
-    private String productId;
+    private String id;
 
     private String name;
     private String description;

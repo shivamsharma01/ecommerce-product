@@ -51,7 +51,7 @@ public class ProductFirestoreRepository {
      */
     public Mono<Boolean> skuTakenByOtherProduct(String sku, String excludeProductId) {
         return findFirstBySku(sku)
-                .map(p -> !excludeProductId.equals(p.getProductId()))
+                .map(p -> !excludeProductId.equals(p.getId()))
                 .defaultIfEmpty(false);
     }
 }

@@ -37,9 +37,9 @@ public class OutboxEventService {
     public Mono<Void> publishProductCreated(ProductDocument product) {
         try {
             String payloadJson = objectMapper.writeValueAsString(toPayload(product, EVENT_PRODUCT_CREATED));
-            return saveOutboxEvent(product.getProductId(), EVENT_PRODUCT_CREATED, payloadJson);
+            return saveOutboxEvent(product.getId(), EVENT_PRODUCT_CREATED, payloadJson);
         } catch (JsonProcessingException ex) {
-            log.error("Failed to serialize outbox payload for product {}", product.getProductId(), ex);
+            log.error("Failed to serialize outbox payload for product {}", product.getId(), ex);
             return Mono.error(new OutboxPersistenceException("Failed to serialize product event", ex));
         }
     }
@@ -47,9 +47,9 @@ public class OutboxEventService {
     public Mono<Void> publishProductUpdated(ProductDocument product) {
         try {
             String payloadJson = objectMapper.writeValueAsString(toPayload(product, EVENT_PRODUCT_UPDATED));
-            return saveOutboxEvent(product.getProductId(), EVENT_PRODUCT_UPDATED, payloadJson);
+            return saveOutboxEvent(product.getId(), EVENT_PRODUCT_UPDATED, payloadJson);
         } catch (JsonProcessingException ex) {
-            log.error("Failed to serialize outbox payload for product {}", product.getProductId(), ex);
+            log.error("Failed to serialize outbox payload for product {}", product.getId(), ex);
             return Mono.error(new OutboxPersistenceException("Failed to serialize product event", ex));
         }
     }
@@ -71,7 +71,7 @@ public class OutboxEventService {
 
     private ProductEventPayload toPayload(ProductDocument product, String eventType) {
         return ProductEventPayload.builder()
-                .productId(product.getProductId())
+                .productId(product.getId())
                 .eventType(eventType)
                 .version(product.getVersion())
                 .updatedAt(product.getUpdatedAt() != null ? product.getUpdatedAt().toInstant() : null)

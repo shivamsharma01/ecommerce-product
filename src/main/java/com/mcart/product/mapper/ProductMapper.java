@@ -14,7 +14,6 @@ import java.util.Date;
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
 
-    @Mapping(source = "productId", target = "id")
     @Mapping(source = "createdAt", target = "createdAt", qualifiedByName = "dateToInstant")
     @Mapping(source = "updatedAt", target = "updatedAt", qualifiedByName = "dateToInstant")
     ProductResponse toResponse(ProductDocument product);
