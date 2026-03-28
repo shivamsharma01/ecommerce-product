@@ -20,6 +20,8 @@ Default port in `application.yml` is **8084**; in Kubernetes use **`SERVER_PORT=
 | `GCP_PROJECT_ID` | GCP project |
 | `SPRING_CLOUD_GCP_FIRESTORE_ENABLED` | `true` / `false` |
 | `SPRING_CLOUD_GCP_PUBSUB_ENABLED` | `true` / `false` |
+| `CATALOG_IMAGES_BUCKET` | GCS bucket used by product image upload endpoint |
+| `CATALOG_IMAGE_PREFIX` | Object prefix for uploaded product images (default `products`) |
 | `APP_SECURITY_ENABLED` | `true` to require JWT on `/api/**` |
 | `APP_SECURITY_REQUIRED_SCOPE` | e.g. `product.admin` — all `/api/**` methods need `SCOPE_product.admin` in the JWT |
 | `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI` | When security is on (must match auth `iss` claim) |
@@ -39,6 +41,7 @@ docker run --rm -p 8080:8080 \
 ## API and docs
 
 - REST base: `/api/products`
+- Product + image upload (multipart): `POST /api/products/upload`
 - OpenAPI: `/v3/api-docs`, Swagger UI: `/swagger-ui.html` (when running)
 
 ## Build and test

@@ -20,7 +20,7 @@ public class ProductResponse {
     private Integer stockQuantity;
     private List<String> categories;
     private String brand;
-    private List<String> imageUrls;
+    private List<GalleryImageResponse> gallery;
     private Double rating;
     private Boolean inStock;
     private Map<String, Object> attributes;

@@ -3,6 +3,7 @@ package com.mcart.product.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcart.product.dto.ProductEventPayload;
+import com.mcart.product.dto.GalleryImageResponse;
 import com.mcart.product.exception.OutboxPersistenceException;
 import com.mcart.product.model.OutboxEventDocument;
 import com.mcart.product.model.ProductDocument;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.UUID;
 
 /**
@@ -80,11 +82,26 @@ public class OutboxEventService {
                 .stockQuantity(product.getStockQuantity())
                 .categories(product.getCategories())
                 .brand(product.getBrand())
-                .imageUrls(product.getImageUrls())
+                .gallery(toGalleryResponse(product))
                 .rating(product.getRating())
                 .inStock(product.getInStock())
                 .attributes(product.getAttributes())
                 .build();
+    }
+
+    private java.util.List<GalleryImageResponse> toGalleryResponse(ProductDocument product) {
+        java.util.List<GalleryImageResponse> out = new ArrayList<>();
+        if (product.getGallery() == null) {
+            return out;
+        }
+        for (var item : product.getGallery()) {
+            out.add(GalleryImageResponse.builder()
+                    .thumbnailUrl(item.getThumbnailUrl())
+                    .hdUrl(item.getHdUrl())
+                    .alt(item.getAlt())
+                    .build());
+        }
+        return out;
     }
 
     private Mono<Void> saveOutboxEvent(String aggregateId, String eventType, String payloadJson) {

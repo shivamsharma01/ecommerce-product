@@ -13,5 +13,8 @@ spring:
           issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8081}
 
 app:
+  catalog:
+    bucket-name: ${CATALOG_IMAGES_BUCKET:}
+    image-prefix: ${CATALOG_IMAGE_PREFIX:products}
   security:
     enabled: ${APP_SECURITY_ENABLED:true}

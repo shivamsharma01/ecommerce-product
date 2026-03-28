@@ -3,10 +3,12 @@ package com.mcart.product.service;
 import com.mcart.product.dto.ProductRequest;
 import com.mcart.product.dto.ProductResponse;
 import com.mcart.product.dto.PagedProductResponse;
+import com.mcart.product.dto.GalleryImageRequest;
 import com.mcart.product.exception.DuplicateSkuException;
 import com.mcart.product.exception.ProductNotFoundException;
 import com.mcart.product.mapper.ProductMapper;
 import com.mcart.product.model.ProductDocument;
+import com.mcart.product.model.ProductGalleryImage;
 import com.mcart.product.repository.ProductFirestoreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import reactor.core.publisher.Mono;
 import java.util.Date;
 import java.util.Comparator;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 
 @Service
@@ -47,7 +50,7 @@ public class ProductService {
                 .stockQuantity(request.getStockQuantity())
                 .categories(request.getCategories())
                 .brand(request.getBrand())
-                .imageUrls(request.getImageUrls())
+                .gallery(resolveGallery(request))
                 .rating(request.getRating())
                 .inStock(resolveInStock(request))
                 .attributes(request.getAttributes())
@@ -95,7 +98,7 @@ public class ProductService {
                     product.setStockQuantity(request.getStockQuantity());
                     product.setCategories(request.getCategories());
                     product.setBrand(request.getBrand());
-                    product.setImageUrls(request.getImageUrls());
+                    product.setGallery(resolveGallery(request));
                     product.setRating(request.getRating());
                     product.setInStock(resolveInStock(request));
                     product.setAttributes(request.getAttributes());
@@ -121,6 +124,24 @@ public class ProductService {
             return request.getInStock();
         }
         return request.getStockQuantity() != null && request.getStockQuantity() > 0;
+    }
+
+    private List<ProductGalleryImage> resolveGallery(ProductRequest request) {
+        List<GalleryImageRequest> galleryRequest = request.getGallery();
+        List<ProductGalleryImage> resolved = new ArrayList<>();
+        int i = 0;
+        for (GalleryImageRequest item : galleryRequest) {
+            i++;
+            String thumb = item.getThumbnailUrl();
+            String hd = item.getHdUrl() == null || item.getHdUrl().isBlank() ? thumb : item.getHdUrl();
+            String alt = item.getAlt() == null || item.getAlt().isBlank() ? "Image " + i : item.getAlt();
+            resolved.add(ProductGalleryImage.builder()
+                    .thumbnailUrl(thumb)
+                    .hdUrl(hd)
+                    .alt(alt)
+                    .build());
+        }
+        return resolved;
     }
 
     private PagedProductResponse toPage(List<ProductResponse> items, int page, int size, int skip) {
