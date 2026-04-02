@@ -8,6 +8,9 @@ spring:
         location: ${SPRING_CLOUD_GCP_CREDENTIALS_LOCATION:}
       firestore:
         enabled: ${SPRING_CLOUD_GCP_FIRESTORE_ENABLED:false}
+      pubsub:
+        health:
+          timeout-millis: ${SPRING_CLOUD_GCP_PUBSUB_HEALTH_TIMEOUT_MILLIS:2500}
   security:
     oauth2:
       resourceserver:
