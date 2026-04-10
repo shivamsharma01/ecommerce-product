@@ -38,11 +38,10 @@ docker run --rm -p 8080:8080 \
   product:local
 ```
 
-## API and docs
+## API
 
 - REST base: `/api/products`
 - Product + image upload (multipart): `POST /api/products/upload`
-- OpenAPI: `/v3/api-docs`, Swagger UI: `/swagger-ui.html` (when running)
 
 ## Build and test
 
