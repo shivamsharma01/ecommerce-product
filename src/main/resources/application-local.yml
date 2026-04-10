@@ -14,7 +14,7 @@ spring:
 
 app:
   catalog:
-    bucket-name: ${CATALOG_IMAGES_BUCKET:ecommerce-mcart-catalog-images}
+    bucket-name: ${CATALOG_IMAGES_BUCKET:my-project-chat-ai-487408-mcart-catalog-images}
     image-prefix: ${CATALOG_IMAGE_PREFIX:products}
   security:
     enabled: ${APP_SECURITY_ENABLED:true}
