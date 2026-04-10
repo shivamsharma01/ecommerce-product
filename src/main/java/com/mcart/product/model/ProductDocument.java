@@ -1,15 +1,13 @@
 package com.mcart.product.model;
 
 import com.google.cloud.firestore.annotation.DocumentId;
+import com.google.cloud.firestore.annotation.IgnoreExtraProperties;
 import com.google.cloud.spring.data.firestore.Document;
 import lombok.*;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Firestore document for products.
- * Uses version field for optimistic concurrency and safe reindexing.
- */
+@IgnoreExtraProperties
 @Document(collectionName = "products")
 @Getter
 @Setter
