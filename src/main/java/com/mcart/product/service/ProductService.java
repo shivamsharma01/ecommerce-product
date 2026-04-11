@@ -11,6 +11,7 @@ import com.mcart.product.model.ProductDocument;
 import com.mcart.product.model.ProductGalleryImage;
 import com.mcart.product.repository.ProductFirestoreRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -23,6 +24,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductService {
 
     private final ProductFirestoreRepository productRepository;
@@ -61,6 +63,7 @@ public class ProductService {
 
         return productRepository.save(product)
                 .flatMap(p -> outboxEventService.publishProductCreated(p).thenReturn(p))
+                .doOnNext(p -> log.info("Product created id={} sku={}", p.getId(), p.getSku()))
                 .map(productMapper::toResponse);
     }
 
@@ -79,7 +82,8 @@ public class ProductService {
                 .sort(Comparator.comparing(ProductDocument::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(productMapper::toResponse)
                 .collectList()
-                .map(items -> toPage(items, safePage, safeSize, skip));
+                .map(items -> toPage(items, safePage, safeSize, skip))
+                .doOnNext(p -> log.debug("Product catalog page page={} size={} total={}", p.getPage(), p.getSize(), p.getTotal()));
     }
 
     @Transactional(transactionManager = "firestoreTransactionManager")
@@ -107,6 +111,7 @@ public class ProductService {
                     return productRepository.save(product);
                 })
                 .flatMap(p -> outboxEventService.publishProductUpdated(p).thenReturn(p))
+                .doOnNext(p -> log.info("Product updated id={} version={}", p.getId(), p.getVersion()))
                 .map(productMapper::toResponse);
     }
 
@@ -140,6 +145,7 @@ public class ProductService {
                     return productRepository.save(product);
                 })
                 .flatMap(p -> outboxEventService.publishProductUpdated(p).thenReturn(p))
+                .doOnNext(p -> log.info("Product gallery appended id={} imageCount={}", p.getId(), additions.size()))
                 .map(productMapper::toResponse);
     }
 
@@ -149,7 +155,8 @@ public class ProductService {
                 .switchIfEmpty(Mono.error(new ProductNotFoundException(id)))
                 .flatMap(product -> outboxEventService.publishProductDeleted(id, product.getVersion(),
                                 product.getUpdatedAt() != null ? product.getUpdatedAt().toInstant() : null)
-                        .then(productRepository.deleteById(id)));
+                        .then(productRepository.deleteById(id)))
+                .doOnSuccess(v -> log.info("Product deleted id={}", id));
     }
 
     private Boolean resolveInStock(ProductRequest request) {

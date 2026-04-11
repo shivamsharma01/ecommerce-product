@@ -10,6 +10,7 @@ import com.mcart.product.dto.ProductResponse;
 import com.mcart.product.dto.ProductUploadGalleryImageRequest;
 import com.mcart.product.dto.ProductUploadRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductImageUploadService {
 
     private final ProductService productService;
@@ -55,6 +57,7 @@ public class ProductImageUploadService {
             uploads.add(uploadGalleryImage(storage, skuSlug, index, image, fileByName));
         }
 
+        log.info("Product image upload (create) filePartCount={} gallerySlots={}", files.size(), request.getGallery().size());
         return Mono.zip(uploads, arr -> Arrays.stream(arr)
                         .map(x -> (GalleryImageRequest) x)
                         .collect(Collectors.toList()))
@@ -92,6 +95,7 @@ public class ProductImageUploadService {
                 .collect(Collectors.toMap(FilePart::filename, f -> f, (a, b) -> a));
         Storage storage = StorageOptions.getDefaultInstance().getService();
 
+        log.info("Product image upload (append) productId={} filePartCount={} newSlots={}", productId, files.size(), galleryMeta.size());
         return productService.getProductById(productId)
                 .flatMap(product -> {
                     String skuSlug = slug(product.getSku());

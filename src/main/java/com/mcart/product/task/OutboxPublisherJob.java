@@ -56,6 +56,8 @@ public class OutboxPublisherJob {
 
         return Mono.fromFuture(pubSubTemplate.publish(PRODUCT_EVENTS_TOPIC, message))
                 .flatMap(ignored -> {
+                    log.debug("Published product event to topic={} eventId={} eventType={} aggregateId={}",
+                            PRODUCT_EVENTS_TOPIC, event.getEventId(), event.getEventType(), event.getAggregateId());
                     event.setStatus("SENT");
                     event.setLastAttemptAt(new Date());
                     return outboxRepository.save(event);

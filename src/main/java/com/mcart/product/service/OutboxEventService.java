@@ -118,6 +118,8 @@ public class OutboxEventService {
                 .lastAttemptAt(now)
                 .build();
         return outboxRepository.save(event)
+                .doOnSuccess(saved -> log.debug("Product outbox queued eventId={} eventType={} aggregateId={}",
+                        saved.getEventId(), eventType, aggregateId))
                 .then()
                 .onErrorMap(ex -> ex instanceof OutboxPersistenceException ope
                         ? ope
