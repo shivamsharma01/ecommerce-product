@@ -111,6 +111,39 @@ public class ProductService {
     }
 
     @Transactional(transactionManager = "firestoreTransactionManager")
+    public Mono<ProductResponse> appendGallery(String id, List<GalleryImageRequest> additions) {
+        if (additions == null || additions.isEmpty()) {
+            return Mono.error(new IllegalArgumentException("No images to append"));
+        }
+        return productRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException(id)))
+                .flatMap(product -> {
+                    List<ProductGalleryImage> merged = new ArrayList<>();
+                    if (product.getGallery() != null) {
+                        merged.addAll(product.getGallery());
+                    }
+                    for (GalleryImageRequest item : additions) {
+                        String thumb = item.getThumbnailUrl();
+                        String hd = item.getHdUrl() == null || item.getHdUrl().isBlank() ? thumb : item.getHdUrl();
+                        String alt = item.getAlt() == null || item.getAlt().isBlank()
+                                ? "Image " + (merged.size() + 1)
+                                : item.getAlt();
+                        merged.add(ProductGalleryImage.builder()
+                                .thumbnailUrl(thumb)
+                                .hdUrl(hd)
+                                .alt(alt)
+                                .build());
+                    }
+                    product.setGallery(merged);
+                    product.setVersion(product.getVersion() + 1);
+                    product.setUpdatedAt(new Date());
+                    return productRepository.save(product);
+                })
+                .flatMap(p -> outboxEventService.publishProductUpdated(p).thenReturn(p))
+                .map(productMapper::toResponse);
+    }
+
+    @Transactional(transactionManager = "firestoreTransactionManager")
     public Mono<Void> deleteProduct(String id) {
         return productRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ProductNotFoundException(id)))

@@ -76,6 +76,38 @@ public class ProductImageUploadService {
                 });
     }
 
+    public Mono<ProductResponse> appendGalleryImages(
+            String productId,
+            List<ProductUploadGalleryImageRequest> galleryMeta,
+            List<FilePart> files
+    ) {
+        if (bucketName == null || bucketName.isBlank()) {
+            return Mono.error(new IllegalStateException("app.catalog.bucket-name must be configured"));
+        }
+        if (galleryMeta == null || galleryMeta.isEmpty()) {
+            return Mono.error(new IllegalArgumentException("gallery manifest must not be empty"));
+        }
+
+        Map<String, FilePart> fileByName = files.stream()
+                .collect(Collectors.toMap(FilePart::filename, f -> f, (a, b) -> a));
+        Storage storage = StorageOptions.getDefaultInstance().getService();
+
+        return productService.getProductById(productId)
+                .flatMap(product -> {
+                    String skuSlug = slug(product.getSku());
+                    int existing = product.getGallery() != null ? product.getGallery().size() : 0;
+                    List<Mono<GalleryImageRequest>> uploads = new ArrayList<>();
+                    for (int i = 0; i < galleryMeta.size(); i++) {
+                        int index = existing + i + 1;
+                        uploads.add(uploadGalleryImage(storage, skuSlug, index, galleryMeta.get(i), fileByName));
+                    }
+                    return Mono.zip(uploads, arr -> Arrays.stream(arr)
+                                    .map(x -> (GalleryImageRequest) x)
+                                    .collect(Collectors.toList()))
+                            .flatMap(gallery -> productService.appendGallery(productId, gallery));
+                });
+    }
+
     private Mono<GalleryImageRequest> uploadGalleryImage(
             Storage storage,
             String skuSlug,

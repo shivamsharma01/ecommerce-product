@@ -1,5 +1,6 @@
 package com.mcart.product.controller;
 
+import com.mcart.product.dto.ProductAppendGalleryRequest;
 import com.mcart.product.dto.ProductResponse;
 import com.mcart.product.dto.ProductRequest;
 import com.mcart.product.dto.ProductUploadRequest;
@@ -53,6 +54,16 @@ public class ProductController {
             @PathVariable String id,
             @Valid @RequestBody ProductRequest request) {
         return productService.updateProduct(id, request)
+                .map(ResponseEntity::ok);
+    }
+
+    @PostMapping(value = "/{id}/gallery", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Mono<ResponseEntity<ProductResponse>> appendProductGallery(
+            @PathVariable String id,
+            @Valid @RequestPart("gallery") ProductAppendGalleryRequest manifest,
+            @RequestPart("files") List<FilePart> files
+    ) {
+        return productImageUploadService.appendGalleryImages(id, manifest.getGallery(), files)
                 .map(ResponseEntity::ok);
     }
 
